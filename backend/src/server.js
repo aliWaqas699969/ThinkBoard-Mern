@@ -4,13 +4,17 @@ import cors from "cors";
 import { connectDb } from "./config/db.js";
 import dotenv from "dotenv";
 import ratelimiter from "./middleware/rateLimiter.js";
+import path from "path";
+
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-
+const ___dirname = path.resolve();
 // #middleware
-app.use(cors());
+if (process.env.NODE_ENV !== "production") {
+  app.use(cors());
+}
 app.use(express.json()); // acces request body
 
 // app.use((req, res, next) => {
@@ -19,6 +23,13 @@ app.use(express.json()); // acces request body
 // });
 app.use(ratelimiter);
 app.use("/api/notes", notesRoutes);
+
+if (process.env.NODE_ENV === "production") {
+  app.use(express.static(path.join(___dirname, "../frontend/dist")));
+  app.get("*", (req, res) => {
+    res.sendFile(path.join(___dirname, "../frontend", "dist", "index.html"));
+  });
+}
 
 connectDb().then(() => {
   app.listen(PORT, () => {
